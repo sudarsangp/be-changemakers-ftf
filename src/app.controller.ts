@@ -14,11 +14,17 @@ export class AppController {
 
   @Get('volunteer/:name')
   getVolunteerName(@Param('name') name) {
-    return this.appService.getVolunteerByName(name);
+    console.log('name', name);
+    return this.appService.getVolunteers();
   }
 
   @Get('bedrock')
   getModels() {
-    return this.appService.connectToBedrock();
+    return this.appService.connectToBedrock('', '');
+  }
+
+  @Get('volunteer/search/:ngo')
+  async getVolunteer(@Param('ngo') ngo) {
+    return await this.appService.searchVolunteer(ngo);
   }
 }

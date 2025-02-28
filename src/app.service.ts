@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
@@ -37,19 +38,17 @@ export class AppService {
     });
   }
 
-  async getVolunteerByName(text) {
+  async getVolunteers() {
     const esSearch = await this.elasticClient.search({
       index: VOLUNTEER_INDEX,
       query: {
-        match: {
-          Full_Name: text,
-        },
+        match_all: {},
       },
     });
     console.log('volunteer esSearch', esSearch);
-    const { _source } = esSearch.hits.hits[0];
-
-    return { data: _source };
+    const allData = esSearch.hits.hits;
+    const d = allData.map((i) => i._source);
+    return { data: d };
   }
 
   async getNgoByName(text) {
@@ -67,14 +66,20 @@ export class AppService {
     return { data: _source };
   }
 
-  async connectToBedrock() {
+  async connectToBedrock(volunteers, ngoDetails) {
     console.log(process.env.AWS_REGION);
     const modelId = 'anthropic.claude-3-5-sonnet-20241022-v2:0';
 
     // Start a conversation with the user message.
     const userMessage =
-      "Describe the purpose of a 'hello world' program in one line.";
+      'find the right volunteers from my volunteer list based the requirements of the initiative, the cause, mission and other factors that our organization cares about';
+
+    const systemMessage = `Your'e a representative of the SSA (Social Service Agency) with these details mentioned: ${ngoDetails}, for my initiative. Use the data from volunteers here: ${volunteers}.`;
     const conversation = [
+      {
+        role: ConversationRole.ASSISTANT,
+        content: [{ text: systemMessage }],
+      },
       {
         role: ConversationRole.USER,
         content: [{ text: userMessage }],
@@ -95,9 +100,22 @@ export class AppService {
       // Extract and print the response text.
       const responseText = response.output.message.content[0].text;
       console.log(responseText);
+      return responseText;
     } catch (err) {
       console.log(`ERROR: Can't invoke '${modelId}'. Reason: ${err}`);
       process.exit(1);
     }
+  }
+
+  async searchVolunteer(ngoName) {
+    const volunteers = await this.getVolunteers();
+    const ngoDetails = await this.getNgoByName(ngoName);
+    console.log('volunteers', volunteers);
+    console.log('ngoDetails', volunteers);
+    const response = await this.connectToBedrock(
+      JSON.stringify(volunteers),
+      ngoDetails,
+    );
+    return { data: response };
   }
 }
