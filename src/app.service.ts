@@ -110,11 +110,11 @@ export class AppService {
   async searchVolunteer(ngoName) {
     const volunteers = await this.getVolunteers();
     const ngoDetails = await this.getNgoByName(ngoName);
-    console.log('volunteers', volunteers);
+    // console.log('volunteers', volunteers);
     console.log('ngoDetails', volunteers);
     const response = await this.connectToBedrock(
       JSON.stringify(volunteers),
-      ngoDetails,
+      JSON.stringify(ngoDetails),
     );
     return { data: response };
   }
